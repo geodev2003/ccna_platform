@@ -12,6 +12,9 @@ jobs:
       contents: read
       packages: write
 
+    env:
+      DOCKER_BUILDKIT: 0
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,9 +23,10 @@ jobs:
 
       - name: Build backend
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/ccna-platform-backend:latest \
-                       -t ghcr.io/${{ github.repository_owner }}/ccna-platform-backend:${{ github.sha }} \
-                       ./backend
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/ccna-platform-backend:latest \
+            -t ghcr.io/${{ github.repository_owner }}/ccna-platform-backend:${{ github.sha }} \
+            ./backend
 
       - name: Push backend
         run: |
@@ -31,10 +35,11 @@ jobs:
 
       - name: Build frontend
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/ccna-platform-frontend:latest \
-                       -t ghcr.io/${{ github.repository_owner }}/ccna-platform-frontend:${{ github.sha }} \
-                       --build-arg NEXT_PUBLIC_API_URL=https://hntuan7684.id.vn/api/v1 \
-                       ./frontend
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/ccna-platform-frontend:latest \
+            -t ghcr.io/${{ github.repository_owner }}/ccna-platform-frontend:${{ github.sha }} \
+            --build-arg NEXT_PUBLIC_API_URL=https://hntuan7684.id.vn/api/v1 \
+            ./frontend
 
       - name: Push frontend
         run: |
