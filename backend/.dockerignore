@@ -1,8 +1,5 @@
-# Tạo file .dockerignore trong thư mục backend
-@"
 node_modules
 dist
 logs
 *.log
 .env
-"@ | Out-File -FilePath D:\Code\ccna-platform\backend\.dockerignore -Encoding utf8

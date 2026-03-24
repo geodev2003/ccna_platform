@@ -1,7 +1,5 @@
-@"
 node_modules
 .next
 *.log
 .env
 .env.local
-"@ | Out-File -FilePath D:\Code\ccna-platform\frontend\.dockerignore -Encoding utf8
