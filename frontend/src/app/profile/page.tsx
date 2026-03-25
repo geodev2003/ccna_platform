@@ -185,7 +185,7 @@ export default function ProfilePage() {
                           <Icon className={`w-4 h-4 shrink-0 ${color}`} />
                           <input className="input text-xs" placeholder={placeholder}
                             value={(form as any)[key] ?? ''}
-                            onChange={e => setForm(f => ({ ...f, [key]: e.target.value || null }))} />
+                            onChange={e => setForm(f => ({ ...f, [key]: e.target.value || undefined }))} />
                         </div>
                       ))}
                     </div>
@@ -230,7 +230,7 @@ export default function ProfilePage() {
                       className="input resize-none h-32"
                       placeholder="Viết vài dòng giới thiệu về bạn, kinh nghiệm, mục tiêu..."
                       value={form.bio ?? ''}
-                      onChange={e => setForm(f => ({ ...f, bio: e.target.value || null }))}
+                      onChange={e => setForm(f => ({ ...f, bio: e.target.value || undefined }))}
                     />
                   ) : (
                     <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
