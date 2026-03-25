@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <body className={`${inter.className} bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen`}>
+    <html lang="vi" suppressHydrationWarning className="dark">
+      <body className={`${inter.className} min-h-screen`} style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <Providers>
           {children}
           <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: '#1e293b', color: '#f1f5f9' } }} />
