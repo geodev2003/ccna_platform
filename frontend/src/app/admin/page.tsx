@@ -43,7 +43,7 @@ function AIGeneratePanel({ modules }: { modules: any[] }) {
         orderIndex: nextOrder,
         durationMin: aiData.lesson.duration_min ?? 45,
         content: aiData.lesson.content,
-        isPublished: false,
+        isPublished: true,
       });
       return aiData;
     },
