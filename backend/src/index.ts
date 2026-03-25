@@ -18,6 +18,8 @@ import progressRoutes  from './routes/progress';
 import analyticsRoutes from './routes/analytics';
 import aiRoutes        from './routes/ai';
 import adminRoutes     from './routes/admin';
+import profileRoutes   from './routes/profile';
+import documentsRoutes from './routes/documents';
 
 const app = express();
 const API = '/api/v1';
@@ -45,6 +47,8 @@ app.use(`${API}/progress`,  progressRoutes);
 app.use(`${API}/analytics`, analyticsRoutes);
 app.use(`${API}/ai`,        aiRoutes);
 app.use(`${API}/admin`,     adminRoutes);
+app.use(`${API}/profile`,   profileRoutes);
+app.use(`${API}/documents`, documentsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
