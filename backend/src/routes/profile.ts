@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
@@ -38,9 +39,16 @@ router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
       cvUrl:       z.string().url().nullable().optional(),
     }).parse(req.body);
 
+    // Prisma nullable JSON fields require Prisma.DbNull instead of plain null
+    const { skills, ...rest } = data;
+    const updateData: Prisma.UserUpdateInput = { ...rest };
+    if (skills !== undefined) {
+      updateData.skills = skills === null ? Prisma.DbNull : skills;
+    }
+
     const user = await prisma.user.update({
       where: { id: req.user!.id },
-      data,
+      data: updateData,
       select: profileSelect,
     });
     res.json(user);
