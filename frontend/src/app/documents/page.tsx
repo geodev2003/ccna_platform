@@ -251,7 +251,7 @@ export default function DocumentsPage() {
 
   // Derive folders from all docs (use separate query without filters)
   const allDocs = docs;
-  const folders = [...new Set(allDocs.map(d => d.folder).filter(Boolean))] as string[];
+  const folders = Array.from(new Set(allDocs.map(d => d.folder).filter(Boolean))) as string[];
 
   const typeCounts = FILE_TYPES.map(ft => ({
     ...ft, count: allDocs.filter(d => d.fileType === ft.value).length,
