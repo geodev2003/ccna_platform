@@ -35,6 +35,18 @@ router.get('/:id', authenticate, async (req: AuthRequest, res, next) => {
   } catch (e) { next(e); }
 });
 
+router.post('/reorder', authenticate, requireRole('ADMIN','INSTRUCTOR'), async (req, res, next) => {
+  try {
+    const { lessons } = z.object({
+      lessons: z.array(z.object({ id: z.string(), orderIndex: z.number().int() })),
+    }).parse(req.body);
+    await Promise.all(lessons.map(({ id, orderIndex }) =>
+      prisma.lesson.update({ where: { id }, data: { orderIndex } })
+    ));
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 router.post('/', authenticate, requireRole('ADMIN','INSTRUCTOR'), async (req, res, next) => {
   try {
     const data = z.object({
