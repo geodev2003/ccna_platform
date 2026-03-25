@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["D:/Code/ccna-platform/frontend/node_modules/next/dist/bin/next", "dev", "-p", "3001"],
+      "port": 3001,
+      "cwd": "D:/Code/ccna-platform/frontend"
+    }
+  ]
+}
