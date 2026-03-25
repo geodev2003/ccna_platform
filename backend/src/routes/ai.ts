@@ -7,7 +7,7 @@ import { AppError } from "../utils/AppError";
 
 const router = Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 const SYSTEM = `You are an expert CCNA instructor. Generate accurate content for Cisco CCNA 200-301. Always respond with valid JSON only.`;
 

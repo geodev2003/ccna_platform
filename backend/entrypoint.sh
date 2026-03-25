@@ -1,16 +1,12 @@
 #!/bin/sh
 set -e
 
-echo "[entrypoint] Checking migration status..."
+echo "[entrypoint] Setting up database..."
 
-# If the database has no migration history (was set up with prisma db push),
-# mark the init migration as already applied (baseline) so it won't try to
-# re-create tables that already exist.
-MIGRATE_STATUS=$(npx prisma migrate status 2>&1 || true)
-if echo "$MIGRATE_STATUS" | grep -q "No migration history found"; then
-    echo "[entrypoint] No migration history found. Marking init as baseline..."
-    npx prisma migrate resolve --applied "20240101000000_init"
-fi
+# If init migration is stuck in 'failed' state (e.g., due to pre-existing tables),
+# roll it back so prisma migrate deploy can re-run it (migration is idempotent).
+# The '|| true' makes this a safe no-op when migration is not in a failed state.
+npx prisma migrate resolve --rolled-back "20240101000000_init" 2>/dev/null || true
 
 echo "[entrypoint] Running pending migrations..."
 npx prisma migrate deploy
