@@ -89,9 +89,11 @@ function DocCard({ doc, onDelete }: { doc: Document; onDelete: (id: string) => v
               </span>
             ))}
           </div>
-          {doc.isPublic
-            ? <Globe className="w-3.5 h-3.5 text-green-500" title="Công khai" />
-            : <Lock className="w-3.5 h-3.5 text-gray-400" title="Riêng tư" />}
+          <span title={doc.isPublic ? 'Công khai' : 'Riêng tư'}>
+            {doc.isPublic
+              ? <Globe className="w-3.5 h-3.5 text-green-500" aria-label="Công khai" />
+              : <Lock className="w-3.5 h-3.5 text-gray-400" aria-label="Riêng tư" />}
+          </span>
         </div>
       </div>
     </div>
