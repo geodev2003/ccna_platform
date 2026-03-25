@@ -177,18 +177,19 @@ function LessonsPanel({ modules }: { modules: any[] }) {
 export default function AdminPage() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
-
-  if (user && user.role === 'STUDENT') { router.push('/dashboard'); return null; }
-
-  const { data: stats } = useQuery({ queryKey: ['admin-stats'], queryFn: () => api.get('/admin/stats').then(r => r.data) });
-  const { data: modules } = useQuery({ queryKey: ['modules'], queryFn: () => api.get('/modules').then(r => r.data) });
-  const { data: userList } = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get('/analytics/admin/users').then(r => r.data) });
   const qc = useQueryClient();
+
+  // All hooks must be called before any conditional returns (Rules of Hooks)
+  const { data: stats } = useQuery({ queryKey: ['admin-stats'], queryFn: () => api.get('/admin/stats').then(r => r.data), enabled: !!user && user.role !== 'STUDENT' });
+  const { data: modules } = useQuery({ queryKey: ['modules'], queryFn: () => api.get('/modules').then(r => r.data) });
+  const { data: userList } = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get('/analytics/admin/users').then(r => r.data), enabled: !!user && user.role !== 'STUDENT' });
 
   const toggleUser = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.patch(`/admin/users/${id}`, { isActive: active }),
     onSuccess: () => { toast.success('Đã cập nhật!'); qc.invalidateQueries({ queryKey: ['admin-users'] }); },
   });
+
+  if (user && user.role === 'STUDENT') { router.push('/dashboard'); return null; }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
