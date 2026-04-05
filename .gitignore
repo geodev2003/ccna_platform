@@ -9,3 +9,4 @@ nginx/ssl/
 postgres_data/
 .DS_Store
 Thumbs.db
+.claude/worktrees/
