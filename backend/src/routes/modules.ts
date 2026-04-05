@@ -28,11 +28,13 @@ router.get('/', authenticate, async (req: AuthRequest, res, next) => {
 
 router.get('/:slug', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const isAdmin = req.user!.role === 'ADMIN' || req.user!.role === 'INSTRUCTOR';
     const m = await prisma.module.findUnique({
-      where: { slug: req.params.slug, isPublished: true },
+      where: { slug: req.params.slug, ...(isAdmin ? {} : { isPublished: true }) },
       include: {
         lessons: {
-          where: { isPublished: true }, orderBy: { orderIndex: 'asc' },
+          where: isAdmin ? {} : { isPublished: true },
+          orderBy: { orderIndex: 'asc' },
           include: {
             tags: { include: { tag: true } },
             _count: { select: { quizzes: true, labs: true } },

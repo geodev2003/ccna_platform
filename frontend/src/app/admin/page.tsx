@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Sparkles, Plus, Trash2, Edit, Users, BookOpen, Trophy, BarChart2, RefreshCw } from 'lucide-react';
+import { Sparkles, Plus, Trash2, Edit, Users, BookOpen, Trophy, BarChart2, RefreshCw,
+         Eye, GripVertical, X, Lightbulb, AlertTriangle, CheckCircle } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
 import Navbar from '@/components/layout/Navbar';
@@ -43,7 +44,7 @@ function AIGeneratePanel({ modules }: { modules: any[] }) {
         orderIndex: nextOrder,
         durationMin: aiData.lesson.duration_min ?? 45,
         content: aiData.lesson.content,
-        isPublished: false,
+        isPublished: true,
       });
       return aiData;
     },
@@ -109,16 +110,126 @@ function AIGeneratePanel({ modules }: { modules: any[] }) {
   );
 }
 
+// ── Content Block Renderer (for preview) ───────────────────────────────────────
+function ContentBlock({ block }: { block: any }) {
+  const { type, data } = block;
+  switch (type) {
+    case 'heading': {
+      const Tag = `h${data.level}` as any;
+      const sizes: Record<number, string> = { 1: 'text-xl', 2: 'text-lg', 3: 'text-base' };
+      return <Tag className={`font-bold ${sizes[data.level] ?? 'text-base'} mt-4 mb-2 text-gray-100`}>{data.text}</Tag>;
+    }
+    case 'paragraph':
+      return <p className="text-gray-300 leading-relaxed mb-3 text-sm">{data.text}</p>;
+    case 'code':
+      return (
+        <div className="mb-3">
+          {data.label && <div className="text-xs text-gray-500 mb-1">{data.label}</div>}
+          <pre className="bg-black text-green-400 text-xs rounded-lg p-3 overflow-x-auto"><code>{data.code}</code></pre>
+        </div>
+      );
+    case 'tip':
+      return (
+        <div className="flex gap-2 bg-blue-900/30 border border-blue-700/50 rounded-lg p-3 mb-3">
+          <Lightbulb className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-200">{data.text}</p>
+        </div>
+      );
+    case 'warning':
+      return (
+        <div className="flex gap-2 bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mb-3">
+          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-200">{data.text}</p>
+        </div>
+      );
+    case 'keypoints':
+      return (
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 mb-3">
+          <div className="text-xs font-semibold text-gray-400 mb-2">Điểm chính</div>
+          <ul className="space-y-1">
+            {(data.points ?? []).map((p: string, i: number) => (
+              <li key={i} className="flex gap-2 text-xs text-gray-300">
+                <CheckCircle className="w-3.5 h-3.5 text-cyan-500 shrink-0 mt-0.5" />{p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    case 'table':
+      return (
+        <div className="overflow-x-auto mb-3 rounded-lg border border-gray-700">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-800">
+              <tr>{(data.headers ?? []).map((h: string, i: number) => (
+                <th key={i} className="px-3 py-2 text-left font-semibold text-gray-400">{h}</th>
+              ))}</tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700/50">
+              {(data.rows ?? []).map((row: string[], ri: number) => (
+                <tr key={ri}>
+                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2 text-gray-300">{cell}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    default: return null;
+  }
+}
+
+// ── Lesson Preview Modal ────────────────────────────────────────────────────────
+function PreviewModal({ lesson, onClose }: { lesson: any; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
+           onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between p-5 border-b border-gray-700 shrink-0">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`badge text-xs ${lesson.isPublished ? 'badge-green' : 'bg-gray-700 text-gray-300'}`}>
+                {lesson.isPublished ? 'Published' : 'Draft'}
+              </span>
+              {lesson.isAiGenerated && <span className="badge bg-purple-900/50 text-purple-300 text-xs">AI Generated</span>}
+              <span className="text-xs text-gray-500">{lesson.type} · {lesson.durationMin}min</span>
+            </div>
+            <h2 className="text-lg font-bold text-white">{lesson.title}</h2>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="overflow-y-auto p-5 flex-1">
+          {(lesson.content ?? []).length > 0
+            ? (lesson.content as any[]).map((block: any, i: number) => <ContentBlock key={i} block={block} />)
+            : <p className="text-gray-500 text-sm text-center py-8">Không có nội dung</p>
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Lessons Management ────────────────────────────────────────────────────────
 function LessonsPanel({ modules }: { modules: any[] }) {
   const qc = useQueryClient();
   const [selectedModule, setSelectedModule] = useState<any>(null);
+  const [previewLesson, setPreviewLesson] = useState<any>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragOverId = useRef<string | null>(null);
 
   const { data: modDetail } = useQuery({
     queryKey: ['module-detail', selectedModule?.slug],
     queryFn: () => api.get(`/modules/${selectedModule.slug}`).then(r => r.data),
     enabled: !!selectedModule,
   });
+
+  useEffect(() => {
+    if (modDetail?.lessons) setLessons([...modDetail.lessons]);
+  }, [modDetail]);
 
   const togglePublish = useMutation({
     mutationFn: ({ id, val }: { id: string; val: boolean }) => api.patch(`/lessons/${id}`, { isPublished: val }),
@@ -128,48 +239,115 @@ function LessonsPanel({ modules }: { modules: any[] }) {
     mutationFn: (id: string) => api.delete(`/lessons/${id}`),
     onSuccess: () => { toast.success('Đã xóa!'); qc.invalidateQueries({ queryKey: ['module-detail', selectedModule?.slug] }); },
   });
+  const reorder = useMutation({
+    mutationFn: (ordered: any[]) => api.post('/lessons/reorder', {
+      lessons: ordered.map((l, i) => ({ id: l.id, orderIndex: i + 1 })),
+    }),
+    onSuccess: () => { toast.success('Đã lưu thứ tự!'); qc.invalidateQueries({ queryKey: ['module-detail', selectedModule?.slug] }); },
+    onError: () => toast.error('Lỗi lưu thứ tự'),
+  });
+
+  // ── Drag-and-drop handlers ──
+  const handleDragStart = (id: string) => setDraggingId(id);
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault();
+    dragOverId.current = id;
+    if (!draggingId || draggingId === id) return;
+    setLessons(prev => {
+      const from = prev.findIndex(l => l.id === draggingId);
+      const to   = prev.findIndex(l => l.id === id);
+      if (from === -1 || to === -1) return prev;
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+  const handleDragEnd = () => {
+    setDraggingId(null);
+    dragOverId.current = null;
+    reorder.mutate(lessons);
+  };
 
   return (
-    <div className="card p-6">
-      <h2 className="font-bold text-lg mb-4">Quản lý bài học</h2>
-      <div className="mb-4">
-        <select className="input" onChange={e => setSelectedModule(modules.find(m => m.id === e.target.value))}>
-          <option value="">Chọn module để xem bài học...</option>
-          {modules.map((m: any) => <option key={m.id} value={m.id}>Phase {m.phase}: {m.title}</option>)}
-        </select>
-      </div>
-      {modDetail && (
-        <div className="space-y-2">
-          {(modDetail.lessons ?? []).map((l: any) => (
-            <div key={l.id} className="flex items-center justify-between py-3 px-4 border border-gray-100 dark:border-gray-700 rounded-xl">
+    <>
+      {previewLesson && <PreviewModal lesson={previewLesson} onClose={() => setPreviewLesson(null)} />}
+      <div className="card p-6 flex flex-col" style={{ maxHeight: '520px' }}>
+        <h2 className="font-bold text-lg mb-4 shrink-0">Quản lý bài học</h2>
+        <div className="mb-3 shrink-0">
+          <select className="input" onChange={e => setSelectedModule(modules.find(m => m.id === e.target.value))}>
+            <option value="">Chọn module để xem bài học...</option>
+            {modules.map((m: any) => <option key={m.id} value={m.id}>Phase {m.phase}: {m.title}</option>)}
+          </select>
+        </div>
+
+        {selectedModule && (
+          <div className="text-xs text-gray-500 mb-2 shrink-0">
+            {lessons.length} bài học · Kéo <GripVertical className="inline w-3 h-3" /> để sắp xếp
+          </div>
+        )}
+
+        {/* Scrollable lesson list */}
+        <div className="overflow-y-auto flex-1 space-y-1.5 pr-1">
+          {lessons.map((l: any) => (
+            <div
+              key={l.id}
+              draggable
+              onDragStart={() => handleDragStart(l.id)}
+              onDragOver={e => handleDragOver(e, l.id)}
+              onDragEnd={handleDragEnd}
+              className={`flex items-center gap-2 py-2.5 px-3 border rounded-xl transition-all select-none
+                ${draggingId === l.id ? 'opacity-40 scale-[0.98]' : 'opacity-100'}
+                border-gray-700 hover:border-gray-600 bg-gray-800/30`}
+            >
+              {/* Drag handle */}
+              <GripVertical className="w-4 h-4 text-gray-600 hover:text-gray-400 cursor-grab shrink-0" />
+
+              {/* Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm truncate">{l.title}</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium text-sm text-gray-200 truncate max-w-[160px]">{l.title}</span>
                   {l.isPublished
-                    ? <span className="badge badge-green">Published</span>
-                    : <span className="badge bg-gray-100 text-gray-600">Draft</span>}
-                  {l.isAiGenerated && <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">AI</span>}
+                    ? <span className="badge badge-green text-xs">Published</span>
+                    : <span className="badge bg-gray-700 text-gray-400 text-xs">Draft</span>}
+                  {l.isAiGenerated && <span className="badge bg-purple-900/50 text-purple-300 text-xs">AI</span>}
                 </div>
-                <div className="text-xs text-gray-400 mt-0.5">{l.type} · {l.durationMin}min</div>
+                <div className="text-xs text-gray-500 mt-0.5">{l.type} · {l.durationMin}min</div>
               </div>
-              <div className="flex items-center gap-2 ml-3">
-                <button onClick={() => togglePublish.mutate({ id: l.id, val: !l.isPublished })}
-                  className={`text-xs px-3 py-1 rounded-lg border font-medium transition ${l.isPublished ? 'border-gray-300 text-gray-600 hover:bg-gray-50' : 'border-green-300 text-green-600 hover:bg-green-50'}`}>
-                  {l.isPublished ? 'Ẩn' : 'Xuất bản'}
+
+              {/* Actions */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button onClick={() => setPreviewLesson(l)}
+                  title="Xem trước"
+                  className="p-1.5 text-gray-400 hover:text-cyan-400 hover:bg-cyan-900/20 rounded-lg transition">
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => togglePublish.mutate({ id: l.id, val: !l.isPublished })}
+                  title={l.isPublished ? 'Ẩn bài học' : 'Xuất bản'}
+                  className={`p-1.5 rounded-lg transition ${l.isPublished
+                    ? 'text-green-400 hover:text-gray-400 hover:bg-gray-700'
+                    : 'text-gray-400 hover:text-green-400 hover:bg-green-900/20'}`}>
+                  <CheckCircle className="w-4 h-4" />
                 </button>
                 <button onClick={() => { if (confirm('Xóa bài học này?')) deleteLesson.mutate(l.id); }}
-                  className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                  title="Xóa"
+                  className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
           ))}
-          {modDetail.lessons?.length === 0 && (
-            <p className="text-center text-gray-400 py-6 text-sm">Chưa có bài học. Hãy tạo bằng AI!</p>
+
+          {selectedModule && lessons.length === 0 && (
+            <p className="text-center text-gray-500 py-8 text-sm">Chưa có bài học. Hãy tạo bằng AI!</p>
+          )}
+          {!selectedModule && (
+            <p className="text-center text-gray-600 py-8 text-sm">Chọn module để quản lý bài học</p>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -177,18 +355,19 @@ function LessonsPanel({ modules }: { modules: any[] }) {
 export default function AdminPage() {
   const user = useAuthStore(s => s.user);
   const router = useRouter();
-
-  if (user && user.role === 'STUDENT') { router.push('/dashboard'); return null; }
-
-  const { data: stats } = useQuery({ queryKey: ['admin-stats'], queryFn: () => api.get('/admin/stats').then(r => r.data) });
-  const { data: modules } = useQuery({ queryKey: ['modules'], queryFn: () => api.get('/modules').then(r => r.data) });
-  const { data: userList } = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get('/analytics/admin/users').then(r => r.data) });
   const qc = useQueryClient();
+
+  // All hooks must be called before any conditional returns (Rules of Hooks)
+  const { data: stats } = useQuery({ queryKey: ['admin-stats'], queryFn: () => api.get('/admin/stats').then(r => r.data), enabled: !!user && user.role !== 'STUDENT' });
+  const { data: modules } = useQuery({ queryKey: ['modules'], queryFn: () => api.get('/modules').then(r => r.data) });
+  const { data: userList } = useQuery({ queryKey: ['admin-users'], queryFn: () => api.get('/analytics/admin/users').then(r => r.data), enabled: !!user && user.role !== 'STUDENT' });
 
   const toggleUser = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.patch(`/admin/users/${id}`, { isActive: active }),
     onSuccess: () => { toast.success('Đã cập nhật!'); qc.invalidateQueries({ queryKey: ['admin-users'] }); },
   });
+
+  if (user && user.role === 'STUDENT') { router.push('/dashboard'); return null; }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
