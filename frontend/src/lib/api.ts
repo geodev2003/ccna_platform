@@ -44,7 +44,7 @@ api.interceptors.response.use(
       } catch (e) {
         processQueue(e, null);
         localStorage.clear();
-        window.location.href = '/auth/login';
+        window.location.href = '/login';
         return Promise.reject(e);
       } finally {
         isRefreshing = false;

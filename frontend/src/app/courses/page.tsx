@@ -1,90 +1,63 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/lib/store';
-import api from '@/lib/api';
 import Link from 'next/link';
 import Navbar from '@/components/layout/Navbar';
 import Sidebar from '@/components/layout/Sidebar';
-import { BookOpen, Clock, Users, CheckCircle, Lock, ChevronRight, GraduationCap, Filter } from 'lucide-react';
+import {
+  Network, Languages, ArrowRight, BookOpen, GraduationCap,
+  Headphones, FileText, PenLine, MessageSquare, Shield, Cpu
+} from 'lucide-react';
 
-const PHASE_COLORS: Record<number, { badge: string; border: string; dot: string; label: string }> = {
-  1: { badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',   border: 'border-t-blue-500',   dot: 'bg-blue-500',   label: 'Nền tảng' },
-  2: { badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300', border: 'border-t-purple-500', dot: 'bg-purple-500', label: 'VLAN & Routing' },
-  3: { badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',       border: 'border-t-red-500',    dot: 'bg-red-500',    label: 'Security' },
-  4: { badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', border: 'border-t-green-500', dot: 'bg-green-500',  label: 'Ôn thi' },
-};
+const COURSE_CATEGORIES = [
+  {
+    href: '/courses/certificates/ccna',
+    badge: 'CCNA 200-301',
+    badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    icon: Network,
+    iconBg: 'bg-blue-500/10',
+    iconColor: 'text-blue-500',
+    borderColor: 'border-t-blue-500',
+    title: 'Chứng chỉ Mạng CCNA',
+    desc: 'Chương trình CCNA 200-301 toàn diện từ nền tảng mạng, routing & switching đến security và WAN. 4 giai đoạn học bài bản với AI tạo nội dung và quiz tự động.',
+    tags: ['TCP/IP', 'Routing', 'VLAN', 'Security', 'WAN', 'Lab Simulation'],
+    skills: [
+      { icon: Network,  label: 'Networking' },
+      { icon: Shield,   label: 'Security' },
+      { icon: Cpu,      label: 'Infrastructure' },
+    ],
+    stats: { modules: '4 Giai đoạn', lessons: '60+ Bài học', quizzes: '200+ Quiz' },
+    cta: 'Vào học CCNA',
+  },
+  {
+    href: '/courses/english/ielts',
+    badge: 'IELTS',
+    badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    icon: Languages,
+    iconBg: 'bg-emerald-500/10',
+    iconColor: 'text-emerald-500',
+    borderColor: 'border-t-emerald-500',
+    title: 'IELTS Preparation',
+    desc: 'Luyện thi IELTS toàn diện: Listening, Reading, Writing, Speaking. Bài tập thực chiến theo dạng đề thi chính thức, phân tích điểm yếu và AI feedback.',
+    tags: ['Listening', 'Reading', 'Writing', 'Speaking', 'Band Score', 'Practice Tests'],
+    skills: [
+      { icon: Headphones,    label: 'Listening' },
+      { icon: FileText,      label: 'Reading' },
+      { icon: PenLine,       label: 'Writing' },
+      { icon: MessageSquare, label: 'Speaking' },
+    ],
+    stats: { modules: '4 Kỹ năng', lessons: 'Bài tập đa dạng', quizzes: 'AI Feedback' },
+    cta: 'Vào học IELTS',
+  },
+];
 
-function CourseCard({ m }: { m: any }) {
-  const pct = m.lessonCount > 0 ? Math.round((m.completedCount / m.lessonCount) * 100) : 0;
-  const colors = PHASE_COLORS[m.phase] ?? PHASE_COLORS[1];
-  return (
-    <Link href={`/learn/${m.slug}`}
-      className={`card border-t-4 ${colors.border} p-5 hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 block group`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex flex-wrap gap-2">
-          <span className={`badge ${colors.badge}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${colors.dot} mr-1`} />
-            Phase {m.phase}
-          </span>
-          {m.enrolled && (
-            <span className="badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-              <CheckCircle className="w-3 h-3 mr-1" /> Đã đăng ký
-            </span>
-          )}
-          {!m.isPublished && (
-            <span className="badge bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400">
-              <Lock className="w-3 h-3 mr-1" /> Chưa mở
-            </span>
-          )}
-        </div>
-      </div>
-
-      <h3 className="font-bold text-base leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition mb-2">
-        {m.title}
-      </h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 leading-relaxed">
-        {m.description}
-      </p>
-
-      <div className="space-y-2 mt-auto">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{m.lessonCount} bài học</span>
-          <span className={`font-semibold ${pct === 100 ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>{pct}%</span>
-        </div>
-        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${pct === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-            style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition">
-        <span>Vào học ngay</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-      </div>
-    </Link>
-  );
-}
-
-export default function CoursesPage() {
+export default function CoursesHubPage() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
-  const [activePhase, setActivePhase] = useState<number | null>(null);
 
-  useEffect(() => { if (!user) router.push('/auth/login'); }, [user, router]);
-
-  const { data: modules = [], isLoading } = useQuery<any[]>({
-    queryKey: ['modules'],
-    queryFn: () => api.get('/modules').then(r => r.data),
-    enabled: !!user,
-  });
-
+  useEffect(() => { if (!user) router.push('/login'); }, [user, router]);
   if (!user) return null;
-
-  const filtered = activePhase ? modules.filter(m => m.phase === activePhase) : modules;
-  const enrolled = modules.filter(m => m.enrolled).length;
-  const completed = modules.filter(m => m.lessonCount > 0 && m.completedCount === m.lessonCount).length;
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -94,108 +67,102 @@ export default function CoursesPage() {
         <main className="flex-1 overflow-y-auto">
 
           {/* Page header */}
-          <div className="bg-gradient-to-r from-blue-600 to-violet-600 px-8 py-10 text-white">
+          <div className="px-8 py-10 text-white"
+            style={{ background: 'linear-gradient(135deg, #6d28d9 0%, #1d4ed8 100%)' }}>
             <div className="max-w-5xl mx-auto">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                   <GraduationCap className="w-5 h-5" />
                 </div>
-                <h1 className="text-2xl font-bold">Khóa học của tôi</h1>
+                <h1 className="text-2xl font-bold">Khóa học</h1>
               </div>
-              <p className="text-blue-100 text-sm mb-6">Các khóa học CCNA 200-301 được tổ chức theo giai đoạn học tập.</p>
-              <div className="grid grid-cols-3 gap-4 max-w-sm">
-                <div className="bg-white/15 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold">{modules.length}</div>
-                  <div className="text-xs text-blue-100">Khóa học</div>
-                </div>
-                <div className="bg-white/15 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold">{enrolled}</div>
-                  <div className="text-xs text-blue-100">Đã đăng ký</div>
-                </div>
-                <div className="bg-white/15 rounded-xl p-3 text-center">
-                  <div className="text-2xl font-bold">{completed}</div>
-                  <div className="text-xs text-blue-100">Hoàn thành</div>
-                </div>
-              </div>
+              <p className="text-purple-100 text-sm">
+                Chọn khóa học phù hợp với mục tiêu của bạn. Chúng tôi cung cấp chương trình CCNA và IELTS
+                với AI hỗ trợ học tập thông minh.
+              </p>
             </div>
           </div>
 
           <div className="p-6">
             <div className="max-w-5xl mx-auto">
+              <div className="grid lg:grid-cols-2 gap-6">
+                {COURSE_CATEGORIES.map((cat) => (
+                  <div key={cat.href}
+                    className={`card border-t-4 ${cat.borderColor} p-7 flex flex-col hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 group`}>
 
-              {/* Phase filter */}
-              <div className="flex items-center gap-2 mb-6 flex-wrap">
-                <span className="text-sm text-gray-500 flex items-center gap-1.5 mr-1">
-                  <Filter className="w-3.5 h-3.5" /> Lọc:
-                </span>
-                <button
-                  onClick={() => setActivePhase(null)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-                    activePhase === null
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}>
-                  Tất cả ({modules.length})
-                </button>
-                {[1, 2, 3, 4].map(p => {
-                  const c = PHASE_COLORS[p];
-                  const count = modules.filter(m => m.phase === p).length;
-                  return (
-                    <button key={p}
-                      onClick={() => setActivePhase(p === activePhase ? null : p)}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-                        activePhase === p
-                          ? `${c.badge} ring-2 ring-current`
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                      }`}>
-                      Phase {p} · {c.label} ({count})
-                    </button>
-                  );
-                })}
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-5">
+                      <div className={`w-14 h-14 rounded-2xl ${cat.iconBg} flex items-center justify-center`}>
+                        <cat.icon className={`w-7 h-7 ${cat.iconColor}`} />
+                      </div>
+                      <span className={`badge ${cat.badgeClass} text-xs font-bold px-3 py-1.5`}>{cat.badge}</span>
+                    </div>
+
+                    {/* Title & desc */}
+                    <h2 className="text-xl font-bold mb-2 text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                      {cat.title}
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5 flex-1">
+                      {cat.desc}
+                    </p>
+
+                    {/* Skills */}
+                    <div className="flex items-center gap-4 mb-5 pb-5 border-b dark:border-gray-700">
+                      {cat.skills.map(({ icon: Icon, label }) => (
+                        <div key={label} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                          <Icon className={`w-3.5 h-3.5 ${cat.iconColor}`} />
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-1.5 mb-5">
+                      {cat.tags.map(t => (
+                        <span key={t} className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                      {Object.entries(cat.stats).map(([key, val]) => (
+                        <div key={key} className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+                          <div className="text-sm font-bold text-gray-800 dark:text-gray-200">{val}</div>
+                          <div className="text-xs text-gray-400 capitalize mt-0.5">{key}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA */}
+                    <Link href={cat.href}
+                      className="flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl font-semibold text-sm transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white group-hover:shadow-lg">
+                      <BookOpen className="w-4 h-4" />
+                      {cat.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                ))}
               </div>
 
-              {/* Course grid */}
-              {isLoading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="card h-52 animate-pulse bg-gray-200 dark:bg-gray-700" />
-                  ))}
+              {/* Quick links */}
+              <div className="mt-8 p-5 card">
+                <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 text-sm">Đường dẫn nhanh</h3>
+                <div className="flex flex-wrap gap-3">
+                  <Link href="/courses/certificates/ccna" className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                    <Network className="w-3.5 h-3.5" /> CCNA 200-301
+                  </Link>
+                  <span className="text-gray-300 dark:text-gray-700">·</span>
+                  <Link href="/courses/english/ielts" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                    <Languages className="w-3.5 h-3.5" /> IELTS Preparation
+                  </Link>
+                  <span className="text-gray-300 dark:text-gray-700">·</span>
+                  <Link href="/learn" className="text-sm text-gray-600 dark:text-gray-400 hover:underline flex items-center gap-1">
+                    <BookOpen className="w-3.5 h-3.5" /> Tất cả bài học
+                  </Link>
                 </div>
-              ) : filtered.length === 0 ? (
-                <div className="text-center py-20 text-gray-400">
-                  <GraduationCap className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p>Không có khóa học nào</p>
-                </div>
-              ) : (
-                <>
-                  {/* Group by phase if showing all */}
-                  {activePhase === null ? (
-                    [1, 2, 3, 4].map(phase => {
-                      const phaseModules = modules.filter(m => m.phase === phase);
-                      if (!phaseModules.length) return null;
-                      const colors = PHASE_COLORS[phase];
-                      return (
-                        <div key={phase} className="mb-10">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
-                            <h2 className="font-semibold text-gray-700 dark:text-gray-300">
-                              Phase {phase}: {colors.label}
-                            </h2>
-                            <span className="text-xs text-gray-400">{phaseModules.length} khóa</span>
-                          </div>
-                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                            {phaseModules.map(m => <CourseCard key={m.id} m={m} />)}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {filtered.map(m => <CourseCard key={m.id} m={m} />)}
-                    </div>
-                  )}
-                </>
-              )}
+              </div>
             </div>
           </div>
         </main>

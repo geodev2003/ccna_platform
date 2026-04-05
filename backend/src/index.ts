@@ -32,8 +32,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(morgan('combined', { stream: { write: m => logger.info(m.trim()) } }));
 
 app.use('/api', rateLimit({ windowMs: 15*60*1000, max: 200 }));
-app.use(`${API}/auth/login`,    rateLimit({ windowMs: 15*60*1000, max: 10 }));
-app.use(`${API}/auth/register`, rateLimit({ windowMs: 15*60*1000, max: 5 }));
+app.use(`${API}/auth/login`,          rateLimit({ windowMs: 15*60*1000, max: 10 }));
+app.use(`${API}/auth/register`,       rateLimit({ windowMs: 15*60*1000, max: 5 }));
+app.use(`${API}/auth/forgot-password`, rateLimit({ windowMs: 15*60*1000, max: 5 }));
+app.use(`${API}/auth/reset-password`,  rateLimit({ windowMs: 15*60*1000, max: 5 }));
 
 app.get('/health', (_, res) => res.json({ status: 'ok', ts: new Date() }));
 

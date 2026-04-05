@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore(s => s.user);
 
-  useEffect(() => { if (!user) router.push('/auth/login'); }, [user, router]);
+  useEffect(() => { if (!user) router.push('/login'); }, [user, router]);
 
   const { data: analytics } = useQuery({
     queryKey: ['analytics-me'],
