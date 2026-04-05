@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { AppError } from '../utils/AppError';
 
 const router = Router();
 
@@ -10,6 +11,13 @@ const profileSelect = {
   id: true, name: true, email: true, role: true, avatarUrl: true,
   bio: true, skills: true, linkedinUrl: true, githubUrl: true,
   websiteUrl: true, cvUrl: true, createdAt: true,
+} as const;
+
+// Public profile fields (no email, no cvUrl for privacy)
+const publicProfileSelect = {
+  id: true, name: true, role: true, avatarUrl: true,
+  bio: true, skills: true, linkedinUrl: true, githubUrl: true,
+  websiteUrl: true, createdAt: true,
 } as const;
 
 router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
@@ -52,6 +60,28 @@ router.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
       select: profileSelect,
     });
     res.json(user);
+  } catch (e) { next(e); }
+});
+
+// GET /profile/:userId — Public profile view (requires auth)
+router.get('/:userId', authenticate, async (req: AuthRequest, res, next) => {
+  try {
+    const { userId } = req.params;
+    // If requesting own profile, return full profile including email
+    if (userId === req.user!.id) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: profileSelect,
+      });
+      if (!user) throw new AppError('User not found', 404);
+      return res.json({ ...user, isOwner: true });
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: userId, isActive: true },
+      select: publicProfileSelect,
+    });
+    if (!user) throw new AppError('User not found', 404);
+    res.json({ ...user, isOwner: false });
   } catch (e) { next(e); }
 });
 

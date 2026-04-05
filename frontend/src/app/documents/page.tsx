@@ -227,7 +227,7 @@ export default function DocumentsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAdd, setShowAdd] = useState(false);
 
-  useEffect(() => { if (!user) router.push('/auth/login'); }, [user, router]);
+  useEffect(() => { if (!user) router.push('/login'); }, [user, router]);
 
   const { data: docs = [], isLoading } = useQuery<Document[]>({
     queryKey: ['documents', activeType, activeFolder, search],

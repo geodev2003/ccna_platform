@@ -49,16 +49,22 @@ enum Role {
   ADMIN
 }
 
+enum CourseType {
+  CCNA
+  IELTS
+}
+
 model Module {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   title       String
-  slug        String   @unique
+  slug        String     @unique
   description String
   phase       Int
   orderIndex  Int
-  isPublished Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  courseType  CourseType @default(CCNA)
+  isPublished Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   lessons     Lesson[]
   enrollments Enrollment[]
   @@map("modules")

@@ -8,8 +8,13 @@ const router = Router();
 
 router.get('/', authenticate, async (req: AuthRequest, res, next) => {
   try {
+    const { courseType } = req.query;
+    const whereClause: any = { isPublished: true };
+    if (courseType === 'CCNA' || courseType === 'IELTS') {
+      whereClause.courseType = courseType;
+    }
     const mods = await prisma.module.findMany({
-      where: { isPublished: true }, orderBy: { orderIndex: 'asc' },
+      where: whereClause, orderBy: { orderIndex: 'asc' },
       include: { _count: { select: { lessons: true } }, enrollments: { where: { userId: req.user!.id } } },
     });
     const result = await Promise.all(mods.map(async m => {
@@ -47,6 +52,7 @@ router.post('/', authenticate, requireRole('ADMIN','INSTRUCTOR'), async (req, re
       title: z.string().min(3), slug: z.string().regex(/^[a-z0-9-]+$/),
       description: z.string(), phase: z.number().int().min(1).max(4),
       orderIndex: z.number().int(), isPublished: z.boolean().optional(),
+      courseType: z.enum(['CCNA', 'IELTS']).optional(),
     }).parse(req.body);
     res.status(201).json(await prisma.module.create({ data }));
   } catch (e) { next(e); }
@@ -58,6 +64,7 @@ router.patch('/:id', authenticate, requireRole('ADMIN','INSTRUCTOR'), async (req
       title: z.string().optional(), description: z.string().optional(),
       phase: z.number().optional(), orderIndex: z.number().optional(),
       isPublished: z.boolean().optional(),
+      courseType: z.enum(['CCNA', 'IELTS']).optional(),
     }).parse(req.body);
     res.json(await prisma.module.update({ where: { id: req.params.id }, data }));
   } catch (e) { next(e); }

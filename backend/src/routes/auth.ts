@@ -75,4 +75,55 @@ router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
   } catch (e) { next(e); }
 });
 
+// POST /auth/forgot-password — generate a password reset token (1 hour validity)
+// In production: send the reset link via email. Here we return it directly for testing.
+router.post('/forgot-password', async (req, res, next) => {
+  try {
+    const { email } = z.object({ email: z.string().email() }).parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email } });
+    // Always respond with 200 to prevent email enumeration attacks
+    if (!user || !user.isActive) {
+      return res.json({ message: 'If that email exists, a reset link has been sent.' });
+    }
+    const resetToken = jwt.sign(
+      { userId: user.id, purpose: 'password-reset' },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1h' }
+    );
+    // TODO: send email with resetToken via mail service
+    // For development/demo: return the token directly
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    res.json({ message: 'If that email exists, a reset link has been sent.', resetUrl });
+  } catch (e) { next(e); }
+});
+
+// POST /auth/reset-password — verify token and update password
+router.post('/reset-password', async (req, res, next) => {
+  try {
+    const { token, newPassword } = z.object({
+      token: z.string(),
+      newPassword: z.string().min(8),
+    }).parse(req.body);
+
+    let payload: any;
+    try {
+      payload = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch {
+      throw new AppError('Invalid or expired reset token', 400);
+    }
+
+    if (payload.purpose !== 'password-reset') throw new AppError('Invalid token', 400);
+
+    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+    if (!user || !user.isActive) throw new AppError('User not found', 404);
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+    // Invalidate all refresh tokens after password reset
+    await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+    res.json({ message: 'Password reset successfully. Please log in with your new password.' });
+  } catch (e) { next(e); }
+});
+
 export default router;

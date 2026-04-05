@@ -4,9 +4,12 @@
     {
       "name": "frontend",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["D:/Code/ccna-platform/frontend/node_modules/next/dist/bin/next", "dev", "-p", "3001"],
-      "port": 3001,
-      "cwd": "D:/Code/ccna-platform/frontend"
+      "runtimeArgs": ["D:/Code/ccna-platform/.claude/worktrees/condescending-turing/frontend/node_modules/next/dist/bin/next", "dev", "-p", "3000"],
+      "port": 3000,
+      "cwd": "D:/Code/ccna-platform/.claude/worktrees/condescending-turing/frontend",
+      "env": {
+        "NEXT_PUBLIC_API_URL": "http://localhost:3001/api/v1"
+      }
     }
   ]
 }
